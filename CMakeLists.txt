@@ -83,6 +83,15 @@ endif()
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE "$<$<AND:$<CONFIG:Debug,RelWithDebInfo>,$<COMPILE_LANGUAGE:CUDA>>:-G>")
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
 
+add_custom_target(run_boids
+    COMMAND ${CMAKE_COMMAND} -E env
+        __GLX_VENDOR_LIBRARY_NAME=nvidia
+        XDG_SESSION_TYPE=x11
+        $<TARGET_FILE:cis5650_boids>
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS cis5650_boids
+)
+
 add_custom_command(
     TARGET ${CMAKE_PROJECT_NAME}
     PRE_BUILD
