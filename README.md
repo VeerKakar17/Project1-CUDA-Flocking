@@ -6,6 +6,8 @@ Project 1 - Flocking**
 * Tested on: Linux Fedora 44 (Dual Boot from Windows Laptop), Intel Ultra 9 275HX, NVIDIA 5070 laptop
 
 ![](/images/demo_ss.png)
+<video src="https://github.com/user-attachments/assets/a0b1c0eb-3145-4f5d-a856-af316851b5ae" autoplay loop muted playsinline><\video>
+
 
 ## Performance Analysis
 
