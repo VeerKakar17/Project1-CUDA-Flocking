@@ -5,7 +5,10 @@ Project 1 - Flocking**
   * [LinkedIn](www.linkedin.com/in/VeerKakar), [personal website](https://veerkakar17.github.io/PortfolioWebsite)
 * Tested on: Linux Fedora 44 (Dual Boot from Windows Laptop), Intel Ultra 9 275HX, NVIDIA 5070 laptop
 
+### Demo Image:
 ![](/images/demo_ss.png)
+
+### Demo Gif:
 ![](/images/Screencast_20260905_235742.gif)
 
 ## Overview
@@ -72,13 +75,20 @@ Some additional information is listed below:
 | 256 | 2104.55 | 2096.6 | 1075.7 |
 | 512 | 2121.1 | 2071.05 | 1012.05 |
 
-These graphs here are showing the performance change based on block size (number of threads per block). The number of blocks (block count) can be derived by doing `blockCount = ciel(numBoids / blockSize)`.
+These graphs here are showing the performance change based on block size (number of threads per block). The number of blocks (block count) can be derived by doing `blockCount = ciel(numBoids / blockSize)`. By increasing the number of threads per block, we are decreasing the total number of blocks.
 
 There was a fixed boid count used here, with 50k for `Uniform` and `Coherent`, and 5k for `Naive`. These were chosen with respect to each implementation to best demonstrate how block count/size affects each one, as we get the best estimate for the grid-based implementations at higher boid counts like 50k, where `Naive` will scale too badly and drop off, giving us a better estimate closer to 5k.
 
 What we can see here is that increasing or decreasing block size does not necessarily always positively or negatively increase performance. For Uniform and Coherent, they both had near optimal performance at `128` threads per block with a decrease as we modify this number in either directions. However, while the rest of the `Uniform` data followed the same trent, it had a spike with the best performance at `512` threads per block.
 
+I believe that this behavior is seen because these 2 implementations are very memory-access heavy, which takes a lot of timee and introduces latency for all these oprations. In order to mask this latency, each blocks needs enough active warps to cover that time. With small block sizes like 32 (one warp), there is more block scheduling overhead and less work per block, resulting in lower performance. 
+For the mid range block sizes (64-256), there are enough warps to hide the latency well, which results in this increased frame rate.
+As the block size gets even larger (512), the Coherent performance drops out. This is because once the GPU has enough warps to mask the latency, increasing the blocks size does not give much performance increase but results in less blocks to schedule. Since there is now less schedulable blocks, the performance drops. 
+For `Uniform`, the performance instead increased at 512 after dropping slightly at 256. This was a bit unexpected, but I believe this could be because with the increased time needed for scattered memory accesses, it needs more warps to mask the latency than `Coherent` which makes these sequential access. Due to this, we are still getting some performance increase up to 512.
+
 For Naive, we had an almost constant FPS with a slight increase in performance up to 256, with a decrease in performance at 512. 
+There was not much difference up to 256 because each thread is doing a costly loop over all other boids, which causes a very large per-thread workload. Because each thread needs to do a lot, the block scheduling overhead matters less, which explains the almost-flat line obsertved.
+Once reaching 512 threads per block, we have a performance drop, which I believe is due to lower scheduling flexibility which comes with fewer blocks, while the increased number of warps per block does not give much improvement to this naive implementation.
 
 ### Does the Coherent implementation perform strictly better than Uniform?
 
